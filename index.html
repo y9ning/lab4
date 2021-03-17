@@ -19,7 +19,7 @@
   width: 100%;
 }
   </style>
-  <title>Lab 4</title>
+  <title>Finding Nearest Hospital or Health Center</title>
 </head>
 
 <body>
@@ -118,34 +118,34 @@
     });
 
     map.on('click', function(e) {
-      // Return any features from the 'libraries' layer whenever the map is clicked
+      // Return any features from the 'schools' layer whenever the map is clicked
       var schoolFeatures = map.queryRenderedFeatures(e.point, { layers: ['schools'] });
       if (!schoolFeatures.length) {
         return;
       }
       var schoolFeature = schoolFeatures[0];
 
-      // Using Turf, find the nearest hospital to library clicked
+      // Using Turf, find the nearest hospital to school clicked
       var nearestHospital = turf.nearest(schoolFeature, hospitals);
 
-      // If a nearest library is found
+      // If a nearest hospital is found
       if (nearestHospital !== null) {
-        // Update the 'nearest-library' data source to include
-        // the nearest library
+        // Update the 'nearest-hospital' data source to include
+        // the nearest hospital
         map.getSource('nearest-hospital').setData({
           type: 'FeatureCollection',
           features: [
             nearestHospital
           ]
         });
-        // Create a new circle layer from the 'nearest-library' data source
+        // Create a new circle layer from the 'nearest-hospital' data source
         map.addLayer({
           id: 'nearest-hospital',
           type: 'circle',
           source: 'nearest-hospital',
           paint: {
-            'circle-radius': 16,
-            'circle-color': '#486DE0'
+            'circle-radius': 20,
+            'circle-color': '#3fe7f3'
           }
         }, 'hospitals');
       }
