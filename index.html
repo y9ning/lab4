@@ -1,0 +1,158 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <!--load files-->
+  <link href='https://api.mapbox.com/mapbox-gl-js/v2.1.1/mapbox-gl.css' rel='stylesheet' />
+  <script src='https://api.mapbox.com/mapbox-gl-js/v2.1.1/mapbox-gl.js'></script>
+  <script src='https://api.mapbox.com/mapbox.js/plugins/turf/v3.0.11/turf.min.js'></script>
+
+  <style>
+  body {
+  margin: 0;
+  padding: 0;
+}
+
+#map {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+}
+  </style>
+  <title>Lab 4</title>
+</head>
+
+<body>
+
+  <div id='map'></div>
+
+  <script>
+
+  // initialize maps
+  mapboxgl.accessToken = 'pk.eyJ1IjoieTluaW5nIiwiYSI6ImNrbGxxdXpxMzAxd3kyd21mM2JqZ3dyZGEifQ.qDVDxbn2LsePNPHw97LSTg';
+    var map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/light-v10',
+        zoom: 12,
+        center: [-114.0719,51.0447]
+    });
+
+    // load two geogJSON data
+    var hospitals = {
+      type: 'FeatureCollection',
+      features: [
+        { type: 'Feature', properties: { name: 'Thronhill Community Health Centre', Address: '6617 Centre ST NW' }, geometry: { type: 'Point', coordinates: [-114.063914, 51.112186] } },
+        { type: 'Feature', properties: { name: 'South Health Campus', Address: '4448 FRONT ST SE' }, geometry: { type: 'Point', coordinates: [-113.951703, 50.882101] } },
+        { type: 'Feature', properties: { name: 'Northwest Community Health Centre', Address: '109 1829 Ranchlands BV NW' }, geometry: { type: 'Point', coordinates: [-114.197161, 51.123333] } },
+        { type: 'Feature', properties: { name: "Alberta Children's Hopspital", Address: '2888 Shaganappi Trail NW' }, geometry: { type: 'Point', coordinates: [-114.147957, 51.074559] } },
+        { type: 'Feature', properties: { name: 'Village Square Community Health Centre', Address: '2623 - 56 ST NE' }, geometry: { type: 'Point', coordinates: [-113.953555, 51.075538] } },
+        { type: 'Feature', properties: { name: 'South Calgary Health Centre', Address: '31 Sunpark Plaza SE' }, geometry: { type: 'Point', coordinates: [-114.058574, 50.902575] } },
+        { type: 'Feature', properties: { name: 'Rockyview General Hospital', Address: '7007 - 14 ST SW' }, geometry: { type: 'Point', coordinates: [-114.096320, 50.991828] } },
+        { type: 'Feature', properties: { name: 'Foothills Hospital', Address: '1403 - 29 ST NW' }, geometry: { type: 'Point', coordinates: [-114.132176, 51.064182] } },
+        { type: 'Feature', properties: { name: 'Acadia Community Health Centre', Address: '151 - 86 AV SE' }, geometry: { type: 'Point', coordinates: [-114.070940, 50.975072] } },
+        { type: 'Feature', properties: { name: 'North Hill Community Health Centre', Address: '1527 19 ST NW' }, geometry: { type: 'Point', coordinates: [-114.106507, 51.065321] } },
+        { type: 'Feature', properties: { name: 'Sheldon M. Chumir Health Centre', Address: '1213 - 4 ST SW' }, geometry: { type: 'Point', coordinates: [-114.072129, 51.041163] } },
+        { type: 'Feature', properties: { name: 'Shaganappi Complex Health Centre', Address: '3415 - 8 AV SW' }, geometry: { type: 'Point', coordinates: [-114.136841, 51.044887] } },
+        { type: 'Feature', properties: { name: 'Peter Lougheed Medical Centre', Address: '3500 - 26 AV NE' }, geometry: { type: 'Point', coordinates: [-113.983943, 51.079016] } },
+        { type: 'Feature', properties: { name: 'East Calgary Health Centre', Address: '4715 8 AV SE' }, geometry: { type: 'Point', coordinates: [-113.967220, 51.045048] } }
+      ]
+    };
+
+
+    map.on('load', function() {
+
+      map.addLayer({
+        id: 'hospitals',
+        type: 'symbol',
+        source: {
+          type: 'geojson',
+          data: hospitals
+        },
+        layout: {
+          'icon-image': 'hospital-15',
+          'icon-allow-overlap': true,
+          'icon-size': 1.3
+        },
+        paint: { }
+      });
+      map.addLayer({
+        id: 'schools',
+        type: 'symbol',
+        source: {
+            type: 'geojson',
+            data: "https://data.calgary.ca/resource/fd9t-tdn2.geojson",
+        },
+        layout: {
+            'icon-image': 'school-15',
+            'icon-allow-overlap': true,
+            'icon-size': 1.3
+        },
+        paint: { }
+      });
+
+      map.addSource('nearest-hospital', {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: [
+        ]
+      }
+    });
+    });
+    // add interactivity
+    var popup = new mapboxgl.Popup();
+
+    map.on('mousemove', function(e) {
+      var features = map.queryRenderedFeatures(e.point, { layers: ['hospitals','schools'] });
+      if (!features.length) {
+        popup.remove();
+        return;
+      }
+      var feature = features[0];
+
+      popup.setLngLat(feature.geometry.coordinates)
+        .setHTML(feature.properties.name)
+        .addTo(map);
+
+      map.getCanvas().style.cursor = features.length ? 'pointer' : '';
+    });
+
+    map.on('click', function(e) {
+      // Return any features from the 'libraries' layer whenever the map is clicked
+      var schoolFeatures = map.queryRenderedFeatures(e.point, { layers: ['schools'] });
+      if (!schoolFeatures.length) {
+        return;
+      }
+      var schoolFeature = schoolFeatures[0];
+
+      // Using Turf, find the nearest hospital to library clicked
+      var nearestHospital = turf.nearest(schoolFeature, hospitals);
+
+      // If a nearest library is found
+      if (nearestHospital !== null) {
+        // Update the 'nearest-library' data source to include
+        // the nearest library
+        map.getSource('nearest-hospital').setData({
+          type: 'FeatureCollection',
+          features: [
+            nearestHospital
+          ]
+        });
+        // Create a new circle layer from the 'nearest-library' data source
+        map.addLayer({
+          id: 'nearest-hospital',
+          type: 'circle',
+          source: 'nearest-hospital',
+          paint: {
+            'circle-radius': 16,
+            'circle-color': '#486DE0'
+          }
+        }, 'hospitals');
+      }
+    });
+
+  </script>
+</body>
+
+
+</html>
